@@ -1,0 +1,19 @@
+syntax = "proto3";
+package comms;
+
+message NameMessage {
+  string name = 1;
+}
+
+service Name {
+  rpc SayName(NameMessage) returns (NameMessage) {}
+}
+
+message WhisperMessage {
+  string source = 1;
+  string body = 2;
+}
+
+service Whisper {
+  rpc SendWhisper(WhisperMessage) returns (WhisperMessage) {}
+}

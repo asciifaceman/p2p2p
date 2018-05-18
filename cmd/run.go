@@ -51,7 +51,6 @@ to quickly create a Cobra application.`,
 	},
 }
 
-//fmt.Sprintf("node-%d", rand.Int)
 func init() {
 	// Initialize global random source
 	rand.Seed(time.Now().UnixNano())
