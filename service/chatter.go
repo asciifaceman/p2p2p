@@ -51,7 +51,7 @@ func (s *Server) getNodeNameFromNode(host string, port int) (*Node, error) {
 func (s *Server) sendWhisper(node *NodeMessage, message string) error {
 	var conn *grpc.ClientConn
 
-	conn, cerr := grpc.Dial(lib.FormatHostPort(node.Host, int(node.Port)), grpc.WithInsecure(), grpc.WithBackoffMaxDelay(minute))
+	conn, cerr := grpc.Dial(lib.FormatHostPort(node.Host, int(node.Port)), grpc.WithInsecure(), grpc.WithBackoffMaxDelay(second*10))
 	if cerr != nil {
 		log.Printf("Could not contact: %v\n", cerr)
 		return cerr
@@ -67,7 +67,7 @@ func (s *Server) sendWhisper(node *NodeMessage, message string) error {
 		return rerr
 	}
 
-	fmt.Printf("ACK: %v", response)
+	log.Printf("%s acknowledged our message? %v", node.Name, response)
 
 	return nil
 }

@@ -40,25 +40,29 @@ func (s *Server) whisperHandler(w http.ResponseWriter, r *http.Request) {
 	if !found {
 		log.Printf("I am not familiar with %s, so I am going to ask my peers...", name)
 		for _, thisNode := range s.Me.Pool.nodes {
+			log.Printf("Asking %s for %s", thisNode.Name, name)
 			found, ferr := s.requestNode(thisNode, name)
 			if ferr != nil {
 				log.Printf("%v", ferr)
+				continue
 			}
 			s.AddNodeToPool(found)
 			break
 		}
-		node, found = s.CheckPoolForNodeByName(name)
-		if !found {
-			log.Printf("Failed to retrieve node from my network. Giving up.")
-			lib.RespondJSON(w, 500, ResponseMessage{Status: "Ok", Responder: s.Me.Name, Body: fmt.Sprintf("Failed to discover %s.", name)})
-			return
-		}
 	}
 
-	s.sendWhisper(node, message)
+	node, found = s.CheckPoolForNodeByName(name)
+	if !found {
+		log.Printf("Failed to retrieve node from my network. Giving up.")
+		lib.RespondJSON(w, 500, ResponseMessage{Status: "Ok", Responder: s.Me.Name, Body: fmt.Sprintf("Failed to discover %s. I will ask my network, try again later.", name)})
+		return
+	}
+
+	werr := s.sendWhisper(node, message)
+	if werr != nil {
+		lib.RespondJSON(w, 404, ResponseMessage{Status: "Ok", Responder: s.Me.Name, Body: fmt.Sprintf("Failed to send message to %s. Reason: %v", name, werr)})
+		return
+	}
 
 	lib.RespondJSON(w, 200, ResponseMessage{Status: "Ok", Responder: s.Me.Name, Body: fmt.Sprintf("Whisper hit.")})
-
-	log.Printf("Sending whisper to %s\n", name)
-
 }

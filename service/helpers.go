@@ -41,6 +41,8 @@ func (s *Server) CheckPoolForNode(node *NodeMessage) bool {
 	return false
 }
 
+// AskPoolNodesForNode
+
 // CheckPoolForNodeByName checks my pool for nodes by name
 func (s *Server) CheckPoolForNodeByName(name string) (*NodeMessage, bool) {
 	for _, node := range s.Me.Pool.nodes {
