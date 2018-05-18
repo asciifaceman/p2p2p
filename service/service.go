@@ -4,6 +4,7 @@
 package service
 
 import (
+	"errors"
 	"log"
 	"strings"
 
@@ -29,6 +30,7 @@ func (s *Server) Start(nodePool string) error {
 	g := new(errgroup.Group)
 	g.Go(func() error { return s.grpcServe(grpcListener) })
 	g.Go(func() error { return s.httpServe(httpListener) })
+	g.Go(func() error { return s.checkBootnodes(nodePool) })
 	g.Go(func() error { return m.Serve() })
 
 	log.Printf("Node [%s] is booting. Listening on [%s:%d]", s.Name, s.Host, s.Port)
@@ -41,6 +43,15 @@ func (s *Server) Start(nodePool string) error {
 	//}
 
 	return nil
+}
+
+func (s *Server) checkBootnodes(nodes string) error {
+	if len(nodes) > 0 {
+		log.Printf("[bootnodes] I have bootnodes... contacting...\n")
+		return nil
+	}
+
+	return errors.New("No bootnodes")
 }
 
 // formatBootnodes takes CLI string and formats into the Pool struct
