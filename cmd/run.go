@@ -17,8 +17,10 @@ package cmd
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"time"
 
+	"github.com/asciifaceman/p2p2p/service"
 	"github.com/spf13/cobra"
 )
 
@@ -46,8 +48,13 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Node [%s] booting up on [%s:%d]...", nodeName, defaultHost, nodePort)
-		fmt.Println("run called")
+		// instantiate & run server
+		server := service.Server{Host: defaultHost, Name: nodeName, Port: nodePort}
+		err := server.Start(nodePool)
+		if err != nil {
+			fmt.Println("Error starting node: ", err)
+			os.Exit(1)
+		}
 	},
 }
 

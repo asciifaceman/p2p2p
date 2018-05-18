@@ -9,8 +9,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// P2Server defines the http API Server
-type P2Server struct {
+// Server defines the http API Server
+type Server struct {
 	router *mux.Router
 	Srv    *http.Server
+	Host   string
+	Port   int
+	Name   string
+	Me     *Node
 }

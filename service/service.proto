@@ -1,5 +1,5 @@
 syntax = "proto3";
-package comms;
+package service;
 
 message NameMessage {
   string name = 1;
@@ -15,5 +15,9 @@ message WhisperMessage {
 }
 
 service Whisper {
-  rpc SendWhisper(WhisperMessage) returns (WhisperMessage) {}
+  rpc SendWhisper(WhisperMessage) returns (WhisperAck) {}
+}
+
+message WhisperAck {
+  bool response = 1;
 }
