@@ -5,19 +5,28 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log"
+	"time"
 
 	"github.com/asciifaceman/p2p2p/lib"
 	"google.golang.org/grpc"
 )
 
-const emptyString string = ""
+const (
+	emptyString string        = ""
+	nanosecond  time.Duration = 1
+	microsecond               = 1000 * nanosecond
+	millisecond               = 1000 * microsecond
+	second                    = 1000 * millisecond
+	minute                    = 60 * second
+	hour                      = 60 * minute
+)
 
 func (s *Server) getNodeNameFromNode(host string, port int) (*Node, error) {
 	var conn *grpc.ClientConn
 
-	conn, cerr := grpc.Dial(lib.FormatHostPort(host, port), grpc.WithInsecure())
+	conn, cerr := grpc.Dial(lib.FormatHostPort(host, port), grpc.WithInsecure(), grpc.WithBackoffMaxDelay(minute))
 	if cerr != nil {
 		log.Printf("Could not contact: %v\n", cerr)
 		return &Node{}, cerr
@@ -38,43 +47,67 @@ func (s *Server) getNodeNameFromNode(host string, port int) (*Node, error) {
 	return node, nil
 }
 
-// BuildInformPool builds the pool in a format for gRPC
-func (s *Server) BuildInformPool(name string, port int) *NodeInformMessage {
-	// TODO: Fix this variables to be a struct, but must think on it
-	// This was the quickest path for me
-	// On a future refactor once everything is working I will shift this
-	// burden on to the recipients
+func (s *Server) sendWhisper(node *NodeMessage, message string) error {
+	var conn *grpc.ClientConn
 
-	// Our basic inform payload
-	informPayload := &NodeInformMessage{
-		Informer: &NodeMessage{
-			Name: s.Name,
-			Host: s.Host,
-			Port: int32(s.Port),
-		},
-		Pool: []*NodeMessage{},
+	conn, cerr := grpc.Dial(lib.FormatHostPort(node.Host, int(node.Port)), grpc.WithInsecure(), grpc.WithBackoffMaxDelay(second*10))
+	if cerr != nil {
+		log.Printf("Could not contact: %v\n", cerr)
+		return cerr
 	}
 
-	// Iter through our nodes, rip out our destination, and pack the rest
-	for _, poolNode := range s.Me.Pool.nodes {
-		if poolNode.Name == name && poolNode.Port == port {
-			continue
-		}
-		thisNode := &NodeMessage{
-			Name: poolNode.Name,
-			Host: poolNode.Host,
-			Port: int32(poolNode.Port),
-		}
-		informPayload.Pool = append(informPayload.Pool, thisNode)
+	defer conn.Close()
+
+	sw := NewWhisperClient(conn)
+
+	response, rerr := sw.SendWhisper(context.Background(), &WhisperMessage{Source: s.Me.Name, Body: message})
+	if rerr != nil {
+		log.Printf("Failed to send a whisper to %s\n", node.Name)
+		return rerr
 	}
 
-	return informPayload
+	log.Printf("%s acknowledged our message? %v", node.Name, response)
+
+	return nil
+}
+
+func (s *Server) requestNode(node *Node, name string, exclude []string) (*NodeMessage, error) {
+	var conn *grpc.ClientConn
+
+	conn, cerr := grpc.Dial(lib.FormatHostPort(node.Host, node.Port), grpc.WithInsecure(), grpc.WithBackoffMaxDelay(minute))
+	if cerr != nil {
+		log.Printf("Could not contact: %v\n", cerr)
+		return &NodeMessage{}, cerr
+	}
+
+	defer conn.Close()
+
+	nq := NewInformServiceClient(conn)
+
+	requestPayload := &NodeRequestMessage{
+		Informer: s.NodeToMessage(s.Me),
+		Request:  name,
+		Exclude:  exclude,
+	}
+
+	// ask our target node for this node
+	response, rerr := nq.RequestNode(context.Background(), requestPayload)
+	if rerr != nil {
+		log.Printf("Error calling remote server %s\n", rerr)
+		return &NodeMessage{}, rerr
+	}
+
+	if response.Found {
+		return response.Contents, nil
+	}
+
+	return &NodeMessage{}, errors.New("Not found")
 }
 
 func (s *Server) informNode(node *Node) error {
 	var conn *grpc.ClientConn
 
-	conn, cerr := grpc.Dial(lib.FormatHostPort(node.Host, node.Port), grpc.WithInsecure())
+	conn, cerr := grpc.Dial(lib.FormatHostPort(node.Host, node.Port), grpc.WithInsecure(), grpc.WithBackoffMaxDelay(minute))
 	if cerr != nil {
 		log.Printf("Could not contact: %v\n", cerr)
 		return cerr
@@ -93,9 +126,11 @@ func (s *Server) informNode(node *Node) error {
 		return rerr
 	}
 
+	var poolSize int = len(s.Me.Pool.nodes)
+
 	// incorporate their response
 	if len(response.Pool) > 0 {
-		fmt.Printf("Incorporating %s's phonebook...\n", node.Name)
+		log.Printf("Incorporating %s's phonebook...\n", node.Name)
 
 		for _, poolNode := range response.Pool {
 			err := s.AddNodeToPool(poolNode)
@@ -104,40 +139,16 @@ func (s *Server) informNode(node *Node) error {
 				continue
 			}
 		}
+
 	}
 
-	return nil
-}
-
-// CheckPoolForNode checks my pool for a nodes name and port
-func (s *Server) CheckPoolForNode(node *NodeMessage) bool {
-	poolNames := make(map[string]int)
-
-	// If we already know the server we don't have to do aything
-	for _, poolNode := range s.Me.Pool.nodes {
-		poolNames[poolNode.Name] = poolNode.Port
-	}
-
-	if val, ok := poolNames[node.Name]; ok && val == int(node.Port) {
-		return true
-	}
-
-	return false
-}
-
-// AddNodeToPool checks for a nodes existence in its pool and adds if it doesn't
-func (s *Server) AddNodeToPool(node *NodeMessage) error {
-	// need to think on this, it feels wrong
-	if s.CheckPoolForNode(node) {
-		log.Printf("I already know [%s@%s:%d]. Welcome back!\n", node.Name, node.Host, node.Port)
-	} else {
-		log.Printf("[%s@%s:%d] is new to me. Adding to my phonebook.\n", node.Name, node.Host, node.Port)
-		newNode := &Node{
-			Name: node.Name,
-			Host: node.Host,
-			Port: int(node.Port),
+	if poolSize != len(s.Me.Pool.nodes) {
+		log.Printf("My pool changed. Informing my network.")
+		ierr := s.InformPoolOfNodes()
+		if ierr != nil {
+			log.Printf("%v", ierr)
 		}
-		s.Me.Pool.nodes = append(s.Me.Pool.nodes, newNode)
 	}
+
 	return nil
 }

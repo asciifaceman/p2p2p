@@ -16,6 +16,17 @@ message NodeMessage {
   int32 port = 3;    
 }
 
+message NodeRequestReply {
+  bool found = 1;
+  NodeMessage contents = 2;
+}
+
+message NodeRequestMessage {
+  NodeMessage informer = 1;
+  string request = 2;
+  repeated string exclude = 3;
+}
+
 message NodeInformMessage {
   NodeMessage informer = 1;
   repeated NodeMessage pool = 2;
@@ -31,4 +42,5 @@ service Name {
 
 service InformService {
   rpc InformNode(NodeInformMessage) returns (NodeInformMessage) {}
+  rpc RequestNode(NodeRequestMessage) returns (NodeRequestReply) {}
 }

@@ -45,3 +45,24 @@ func (s *Server) InformNode(ctx context.Context, in *NodeInformMessage) (*NodeIn
 	log.Printf("Acknowledging receipt & attempted incorporation.\n")
 	return informPool, nil
 }
+
+// RequestNode responds to a request to check our pool for a specific node
+func (s *Server) RequestNode(ctx context.Context, in *NodeRequestMessage) (*NodeRequestReply, error) {
+	log.Printf("Received a request from [%s@%s:%d] to look up [%s@??:??], processing...", in.Informer.Name, in.Informer.Host, in.Informer.Port, in.Request)
+
+	if _, found := s.CheckPoolForNodeByName(in.Request); !found {
+		in.Exclude = append(in.Exclude, s.Me.Name)
+		err := s.AskPeersForNode(in.Request, in.Exclude)
+		if err != nil {
+			log.Printf("Something went wrong searching my graph.\n")
+		}
+	}
+	node, found := s.CheckPoolForNodeByName(in.Request)
+	if found {
+		log.Printf("Found [%s] for [%s@%s:%d], responding...", node.Name, in.Informer.Name, in.Informer.Host, in.Informer.Port)
+		return &NodeRequestReply{Found: true, Contents: node}, nil
+	}
+
+	log.Printf("I couldn't find [%s] for [%s@%s:%d], responding...", in.Request, in.Informer.Name, in.Informer.Host, in.Informer.Port)
+	return &NodeRequestReply{Found: false, Contents: &NodeMessage{}}, nil
+}
