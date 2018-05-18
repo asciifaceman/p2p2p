@@ -1,4 +1,4 @@
-// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
+// Copyright © 2018 Charles Corebtt <nafredy@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,23 @@ package cmd
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/spf13/cobra"
+)
+
+// Initialization variables and constants
+var (
+	nodeName string
+	nodePort int
+	nodePool string
+)
+
+const (
+	defaultName string = "node"
+	defaultPort int    = 5000
+	defaultHost string = "0.0.0.0"
 )
 
 // runCmd represents the run command
@@ -31,12 +46,21 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("Node [%s] booting up on [%s:%d]...", nodeName, defaultHost, nodePort)
 		fmt.Println("run called")
 	},
 }
 
+//fmt.Sprintf("node-%d", rand.Int)
 func init() {
+	// Initialize global random source
+	rand.Seed(time.Now().UnixNano())
+
 	rootCmd.AddCommand(runCmd)
+
+	runCmd.Flags().StringVarP(&nodeName, "name", "n", fmt.Sprintf("%s-%d", defaultName, rand.Intn(100)), "The name of the node being initialized.")
+	runCmd.Flags().StringVarP(&nodePool, "bootnodes", "b", "", "The bootnode pool (if applicable). Format: -b localhost:3031,localhost3032,...")
+	runCmd.Flags().IntVarP(&nodePort, "port", "p", defaultPort, "The port of the node being initialized.")
 
 	// Here you will define your flags and configuration settings.
 
