@@ -51,7 +51,11 @@ func (s *Server) RequestNode(ctx context.Context, in *NodeRequestMessage) (*Node
 	log.Printf("Received a request from [%s@%s:%d] to look up [%s@??:??], processing...", in.Informer.Name, in.Informer.Host, in.Informer.Port, in.Request)
 
 	if _, found := s.CheckPoolForNodeByName(in.Request); !found {
-		s.AskPeersForNode(in.Request, in.Exclude)
+		in.Exclude = append(in.Exclude, s.Me.Name)
+		err := s.AskPeersForNode(in.Request, in.Exclude)
+		if err != nil {
+			log.Printf("Something went wrong searching my graph.\n")
+		}
 	}
 	node, found := s.CheckPoolForNodeByName(in.Request)
 	if found {

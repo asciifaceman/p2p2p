@@ -60,6 +60,31 @@ func (s *Server) InformPoolOfNodes() error {
 	return nil
 }
 
+// AskPeersForNode asks the peers for a node
+func (s *Server) AskPeersForNode(name string, exclude []string) error {
+	log.Printf("I am not familiar with %s, so I am going to ask my peers...", name)
+OUTER:
+	for _, thisNode := range s.Me.Pool.nodes {
+		log.Printf("[asking]: %s", thisNode.Name)
+		log.Printf("[asking] Excluding: %s", exclude)
+		for _, e := range exclude {
+			if e == thisNode.Name {
+				continue OUTER
+			}
+		}
+		log.Printf("Asking %s for %s", thisNode.Name, name)
+		found, ferr := s.requestNode(thisNode, name, exclude)
+		if ferr != nil {
+			log.Printf("%v", ferr)
+			exclude = append(exclude, thisNode.Name)
+			continue
+		}
+		s.AddNodeToPool(found)
+		break
+	}
+	return nil
+}
+
 // CheckPoolForNodeByName checks my pool for nodes by name
 func (s *Server) CheckPoolForNodeByName(name string) (*NodeMessage, bool) {
 	for _, node := range s.Me.Pool.nodes {
