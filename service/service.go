@@ -33,7 +33,11 @@ func (s *Server) Start(nodePool string) error {
 	g.Go(func() error { return s.checkBootnodes(nodePool) })
 	g.Go(func() error { return m.Serve() })
 
-	log.Printf("Node [%s] is booting. Listening on [%s:%d]", s.Name, s.Host, s.Port)
+	log.Printf("==============================:\n")
+	log.Printf("Welcome to p2p2p - The naive graph network that does very little.\n")
+	log.Printf("==============================:\n")
+	log.Printf("\n\n")
+	log.Printf("Node [%s] is booting. Listening on [%s:%d]\n", s.Name, s.Host, s.Port)
 
 	log.Println("Server running:", g.Wait())
 
@@ -47,20 +51,43 @@ func (s *Server) Start(nodePool string) error {
 
 func (s *Server) checkBootnodes(nodes string) error {
 	if len(nodes) > 0 {
-		log.Printf("[bootnodes] I have bootnodes... contacting...\n")
+		log.Printf("[network] I have bootnodes... contacting...\n")
+
+		// Format my input, contact the nodes, and add them to my pool
+		s.Me.Pool = *s.formatBootnodes(nodes)
+
+		// Give each of my nodes my phonebook, minus themselves
+		if len(s.Me.Pool.nodes) > 0 {
+			log.Printf("[network] Informing my bootnodes of their graph...\n")
+			for i := range s.Me.Pool.nodes {
+				log.Printf("[network] Sending %s my phonebook...\n", s.Me.Pool.nodes[i].Name)
+				ierr := s.informNode(s.Me.Pool.nodes[i])
+				if ierr != nil {
+					log.Fatalf("[network] Informing failed: %v\n", ierr)
+				}
+				log.Printf("[network] %s has incorporated our phonebook.\n", s.Me.Pool.nodes[i].Name)
+			}
+		}
+
 		return nil
 	}
 
 	return errors.New("No bootnodes")
 }
 
-// formatBootnodes takes CLI string and formats into the Pool struct
+// formatBootnodes takes CLI string, contacts nodes, and generates pool
 func (s *Server) formatBootnodes(nodes string) *Pool {
 	pool := &Pool{}
 	splitPool := strings.Split(nodes, ",")
 	for i := range splitPool {
 		host := strings.Split(splitPool[i], ":")
-		thisNode := Node{Host: host[0], Port: lib.ToInt(host[1])}
+		bootNode, err := s.getNodeNameFromNode(host[0], lib.ToInt(host[1]))
+		if err != nil {
+			log.Fatalf("Failed to retrieve the name for node [%s:%d]. Ignoring and moving on (backoff not implemented).\n", host[0], lib.ToInt(host[1]))
+			continue
+		}
+		thisNode := Node{Name: bootNode.Name, Host: host[0], Port: lib.ToInt(host[1])}
+		log.Printf("Found %s@%s:%d!, adding to available node pool.\n", thisNode.Name, thisNode.Host, thisNode.Port)
 		pool.nodes = append(pool.nodes, &thisNode)
 	}
 	return pool

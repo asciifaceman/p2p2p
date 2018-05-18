@@ -8,9 +8,10 @@ It is generated from these files:
 	service.proto
 
 It has these top-level messages:
-	NameMessage
 	WhisperMessage
 	WhisperAck
+	NodeMessage
+	NodeInformMessage
 */
 package service
 
@@ -34,22 +35,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type NameMessage struct {
-	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-}
-
-func (m *NameMessage) Reset()                    { *m = NameMessage{} }
-func (m *NameMessage) String() string            { return proto.CompactTextString(m) }
-func (*NameMessage) ProtoMessage()               {}
-func (*NameMessage) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
-
-func (m *NameMessage) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
 type WhisperMessage struct {
 	Source string `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
 	Body   string `protobuf:"bytes,2,opt,name=body" json:"body,omitempty"`
@@ -58,7 +43,7 @@ type WhisperMessage struct {
 func (m *WhisperMessage) Reset()                    { *m = WhisperMessage{} }
 func (m *WhisperMessage) String() string            { return proto.CompactTextString(m) }
 func (*WhisperMessage) ProtoMessage()               {}
-func (*WhisperMessage) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (*WhisperMessage) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 func (m *WhisperMessage) GetSource() string {
 	if m != nil {
@@ -81,7 +66,7 @@ type WhisperAck struct {
 func (m *WhisperAck) Reset()                    { *m = WhisperAck{} }
 func (m *WhisperAck) String() string            { return proto.CompactTextString(m) }
 func (*WhisperAck) ProtoMessage()               {}
-func (*WhisperAck) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (*WhisperAck) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
 func (m *WhisperAck) GetResponse() bool {
 	if m != nil {
@@ -90,10 +75,67 @@ func (m *WhisperAck) GetResponse() bool {
 	return false
 }
 
+type NodeMessage struct {
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Host string `protobuf:"bytes,2,opt,name=host" json:"host,omitempty"`
+	Port int32  `protobuf:"varint,3,opt,name=port" json:"port,omitempty"`
+}
+
+func (m *NodeMessage) Reset()                    { *m = NodeMessage{} }
+func (m *NodeMessage) String() string            { return proto.CompactTextString(m) }
+func (*NodeMessage) ProtoMessage()               {}
+func (*NodeMessage) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+func (m *NodeMessage) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *NodeMessage) GetHost() string {
+	if m != nil {
+		return m.Host
+	}
+	return ""
+}
+
+func (m *NodeMessage) GetPort() int32 {
+	if m != nil {
+		return m.Port
+	}
+	return 0
+}
+
+type NodeInformMessage struct {
+	Informer *NodeMessage   `protobuf:"bytes,1,opt,name=informer" json:"informer,omitempty"`
+	Pool     []*NodeMessage `protobuf:"bytes,2,rep,name=pool" json:"pool,omitempty"`
+}
+
+func (m *NodeInformMessage) Reset()                    { *m = NodeInformMessage{} }
+func (m *NodeInformMessage) String() string            { return proto.CompactTextString(m) }
+func (*NodeInformMessage) ProtoMessage()               {}
+func (*NodeInformMessage) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+func (m *NodeInformMessage) GetInformer() *NodeMessage {
+	if m != nil {
+		return m.Informer
+	}
+	return nil
+}
+
+func (m *NodeInformMessage) GetPool() []*NodeMessage {
+	if m != nil {
+		return m.Pool
+	}
+	return nil
+}
+
 func init() {
-	proto.RegisterType((*NameMessage)(nil), "service.NameMessage")
 	proto.RegisterType((*WhisperMessage)(nil), "service.WhisperMessage")
 	proto.RegisterType((*WhisperAck)(nil), "service.WhisperAck")
+	proto.RegisterType((*NodeMessage)(nil), "service.NodeMessage")
+	proto.RegisterType((*NodeInformMessage)(nil), "service.NodeInformMessage")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -107,7 +149,7 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for Name service
 
 type NameClient interface {
-	SayName(ctx context.Context, in *NameMessage, opts ...grpc.CallOption) (*NameMessage, error)
+	SayName(ctx context.Context, in *NodeMessage, opts ...grpc.CallOption) (*NodeMessage, error)
 }
 
 type nameClient struct {
@@ -118,8 +160,8 @@ func NewNameClient(cc *grpc.ClientConn) NameClient {
 	return &nameClient{cc}
 }
 
-func (c *nameClient) SayName(ctx context.Context, in *NameMessage, opts ...grpc.CallOption) (*NameMessage, error) {
-	out := new(NameMessage)
+func (c *nameClient) SayName(ctx context.Context, in *NodeMessage, opts ...grpc.CallOption) (*NodeMessage, error) {
+	out := new(NodeMessage)
 	err := grpc.Invoke(ctx, "/service.Name/SayName", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -130,7 +172,7 @@ func (c *nameClient) SayName(ctx context.Context, in *NameMessage, opts ...grpc.
 // Server API for Name service
 
 type NameServer interface {
-	SayName(context.Context, *NameMessage) (*NameMessage, error)
+	SayName(context.Context, *NodeMessage) (*NodeMessage, error)
 }
 
 func RegisterNameServer(s *grpc.Server, srv NameServer) {
@@ -138,7 +180,7 @@ func RegisterNameServer(s *grpc.Server, srv NameServer) {
 }
 
 func _Name_SayName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NameMessage)
+	in := new(NodeMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -150,7 +192,7 @@ func _Name_SayName_Handler(srv interface{}, ctx context.Context, dec func(interf
 		FullMethod: "/service.Name/SayName",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NameServer).SayName(ctx, req.(*NameMessage))
+		return srv.(NameServer).SayName(ctx, req.(*NodeMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -232,21 +274,90 @@ var _Whisper_serviceDesc = grpc.ServiceDesc{
 	Metadata: "service.proto",
 }
 
+// Client API for InformService service
+
+type InformServiceClient interface {
+	InformNode(ctx context.Context, in *NodeInformMessage, opts ...grpc.CallOption) (*WhisperAck, error)
+}
+
+type informServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewInformServiceClient(cc *grpc.ClientConn) InformServiceClient {
+	return &informServiceClient{cc}
+}
+
+func (c *informServiceClient) InformNode(ctx context.Context, in *NodeInformMessage, opts ...grpc.CallOption) (*WhisperAck, error) {
+	out := new(WhisperAck)
+	err := grpc.Invoke(ctx, "/service.InformService/InformNode", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for InformService service
+
+type InformServiceServer interface {
+	InformNode(context.Context, *NodeInformMessage) (*WhisperAck, error)
+}
+
+func RegisterInformServiceServer(s *grpc.Server, srv InformServiceServer) {
+	s.RegisterService(&_InformService_serviceDesc, srv)
+}
+
+func _InformService_InformNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NodeInformMessage)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InformServiceServer).InformNode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/service.InformService/InformNode",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InformServiceServer).InformNode(ctx, req.(*NodeInformMessage))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _InformService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "service.InformService",
+	HandlerType: (*InformServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "InformNode",
+			Handler:    _InformService_InformNode_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "service.proto",
+}
+
 func init() { proto.RegisterFile("service.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 199 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2d, 0x4e, 0x2d, 0x2a,
-	0xcb, 0x4c, 0x4e, 0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x87, 0x72, 0x95, 0x14, 0xb9,
-	0xb8, 0xfd, 0x12, 0x73, 0x53, 0x7d, 0x53, 0x8b, 0x8b, 0x13, 0xd3, 0x53, 0x85, 0x84, 0xb8, 0x58,
-	0xf2, 0x12, 0x73, 0x53, 0x25, 0x18, 0x15, 0x18, 0x35, 0x38, 0x83, 0xc0, 0x6c, 0x25, 0x1b, 0x2e,
-	0xbe, 0xf0, 0x8c, 0xcc, 0xe2, 0x82, 0xd4, 0x22, 0x98, 0x2a, 0x31, 0x2e, 0xb6, 0xe2, 0xfc, 0xd2,
-	0xa2, 0x64, 0x98, 0x3a, 0x28, 0x0f, 0xa4, 0x3b, 0x29, 0x3f, 0xa5, 0x52, 0x82, 0x09, 0xa2, 0x1b,
-	0xc4, 0x56, 0xd2, 0xe0, 0xe2, 0x82, 0xea, 0x76, 0x4c, 0xce, 0x16, 0x92, 0xe2, 0xe2, 0x28, 0x4a,
-	0x2d, 0x2e, 0xc8, 0xcf, 0x2b, 0x86, 0xe8, 0xe5, 0x08, 0x82, 0xf3, 0x8d, 0xec, 0xb9, 0x58, 0x40,
-	0x4e, 0x11, 0x32, 0xe7, 0x62, 0x0f, 0x4e, 0xac, 0x04, 0x33, 0x45, 0xf4, 0x60, 0xce, 0x46, 0x72,
-	0xa4, 0x14, 0x56, 0x51, 0x25, 0x06, 0x23, 0x0f, 0x2e, 0x76, 0xa8, 0x55, 0x42, 0xb6, 0x5c, 0xdc,
-	0xc1, 0xa9, 0x79, 0x29, 0x30, 0xae, 0x38, 0x5c, 0x07, 0xaa, 0x4f, 0xa4, 0x84, 0xd1, 0x25, 0x1c,
-	0x93, 0xb3, 0x95, 0x18, 0x92, 0xd8, 0xc0, 0xa1, 0x64, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0x86,
-	0x13, 0x8d, 0x60, 0x36, 0x01, 0x00, 0x00,
+	// 287 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x52, 0xc1, 0x4e, 0x83, 0x40,
+	0x14, 0x2c, 0x2d, 0x16, 0x7c, 0xa4, 0x26, 0xae, 0x46, 0x09, 0x27, 0xb2, 0x27, 0x4e, 0x8d, 0xc1,
+	0x83, 0x17, 0x4d, 0xd3, 0x9b, 0x3d, 0xd8, 0x18, 0x38, 0x78, 0xa6, 0xf0, 0xb4, 0xa4, 0x96, 0x47,
+	0x76, 0xd1, 0xa4, 0x7f, 0x6f, 0x76, 0x61, 0x89, 0x34, 0xed, 0x6d, 0x66, 0x76, 0xde, 0xcc, 0xee,
+	0x03, 0x98, 0x49, 0x14, 0xbf, 0x65, 0x8e, 0xf3, 0x5a, 0x50, 0x43, 0xcc, 0xe9, 0x28, 0x7f, 0x86,
+	0xab, 0x8f, 0x6d, 0x29, 0x6b, 0x14, 0x6f, 0x28, 0x65, 0xf6, 0x85, 0xec, 0x0e, 0xa6, 0x92, 0x7e,
+	0x44, 0x8e, 0xbe, 0x15, 0x5a, 0xd1, 0x65, 0xd2, 0x31, 0xc6, 0xc0, 0xde, 0x50, 0x71, 0xf0, 0xc7,
+	0x5a, 0xd5, 0x98, 0x47, 0x00, 0xdd, 0xf4, 0x32, 0xdf, 0xb1, 0x00, 0x5c, 0x81, 0xb2, 0xa6, 0x4a,
+	0xb6, 0xb3, 0x6e, 0xd2, 0x73, 0xbe, 0x02, 0x6f, 0x4d, 0x05, 0x9a, 0x12, 0x06, 0x76, 0x95, 0xed,
+	0x4d, 0x85, 0xc6, 0x4a, 0xdb, 0x92, 0x6c, 0x4c, 0x81, 0xc2, 0x4a, 0xab, 0x49, 0x34, 0xfe, 0x24,
+	0xb4, 0xa2, 0x8b, 0x44, 0x63, 0x4e, 0x70, 0xad, 0xa2, 0x56, 0xd5, 0x27, 0x89, 0xbd, 0x09, 0x7c,
+	0x00, 0xb7, 0xd4, 0x02, 0x0a, 0x1d, 0xea, 0xc5, 0xb7, 0x73, 0xf3, 0xe4, 0x7f, 0xc5, 0x49, 0xef,
+	0x62, 0x91, 0x8a, 0xa6, 0x6f, 0x7f, 0x1c, 0x4e, 0xce, 0xba, 0xb5, 0x23, 0x5e, 0x80, 0xbd, 0x56,
+	0x17, 0x7c, 0x02, 0x27, 0xcd, 0x0e, 0x1a, 0x9e, 0xb4, 0x07, 0x27, 0x55, 0x3e, 0x8a, 0x5f, 0xc1,
+	0xe9, 0xd6, 0xc4, 0x5e, 0xc0, 0x4b, 0xb1, 0x2a, 0x0c, 0xbd, 0xef, 0x27, 0x86, 0x5f, 0x21, 0xb8,
+	0x39, 0x3e, 0x58, 0xe6, 0x3b, 0x3e, 0x8a, 0xdf, 0x61, 0xd6, 0xbe, 0x3b, 0x6d, 0x4f, 0xd9, 0x02,
+	0xa0, 0x15, 0x54, 0x23, 0x0b, 0x06, 0x17, 0x18, 0x6c, 0xe8, 0x4c, 0xe2, 0x66, 0xaa, 0x7f, 0x88,
+	0xc7, 0xbf, 0x00, 0x00, 0x00, 0xff, 0xff, 0xaa, 0x7b, 0xa1, 0xcd, 0x21, 0x02, 0x00, 0x00,
 }

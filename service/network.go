@@ -64,6 +64,7 @@ func (s *Server) grpcServe(l net.Listener) error {
 	// attach the name service
 	RegisterNameServer(grpcServer, s)
 	RegisterWhisperServer(grpcServer, s)
+	RegisterInformServiceServer(grpcServer, s)
 
 	log.Printf("gRPC Listening...\n")
 
