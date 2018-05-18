@@ -19,6 +19,7 @@ import (
 func (s *Server) buildRoutes() *mux.Router {
 	r := mux.NewRouter()
 	r.HandleFunc("/health", s.healthHandler).Methods("GET")
+	r.HandleFunc("/whisper/{name}", s.whisperHandler).Methods("GET", "POST")
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
 
 	return r
