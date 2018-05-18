@@ -24,6 +24,7 @@ message NodeRequestReply {
 message NodeRequestMessage {
   NodeMessage informer = 1;
   string request = 2;
+  repeated string exclude = 3;
 }
 
 message NodeInformMessage {

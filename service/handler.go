@@ -49,6 +49,10 @@ func (s *Server) InformNode(ctx context.Context, in *NodeInformMessage) (*NodeIn
 // RequestNode responds to a request to check our pool for a specific node
 func (s *Server) RequestNode(ctx context.Context, in *NodeRequestMessage) (*NodeRequestReply, error) {
 	log.Printf("Received a request from [%s@%s:%d] to look up [%s@??:??], processing...", in.Informer.Name, in.Informer.Host, in.Informer.Port, in.Request)
+
+	if _, found := s.CheckPoolForNodeByName(in.Request); !found {
+		s.AskPeersForNode(in.Request, in.Exclude)
+	}
 	node, found := s.CheckPoolForNodeByName(in.Request)
 	if found {
 		log.Printf("Found [%s] for [%s@%s:%d], responding...", node.Name, in.Informer.Name, in.Informer.Host, in.Informer.Port)

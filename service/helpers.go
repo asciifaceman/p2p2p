@@ -41,7 +41,24 @@ func (s *Server) CheckPoolForNode(node *NodeMessage) bool {
 	return false
 }
 
-// AskPoolNodesForNode
+// InformPoolOfNodes informs the entire pool of changes to its pool
+func (s *Server) InformPoolOfNodes() error {
+	// Give each of my nodes my phonebook, minus themselves
+	if len(s.Me.Pool.nodes) > 0 {
+		log.Printf("[network] Informing my bootnodes of their graph...\n")
+		for i := range s.Me.Pool.nodes {
+			log.Printf("[network] Sending %s my phonebook...\n", s.Me.Pool.nodes[i].Name)
+			ierr := s.informNode(s.Me.Pool.nodes[i])
+			if ierr != nil {
+				log.Printf("[network] Informing failed: %v\n", ierr)
+				return ierr
+			}
+			log.Printf("[network] %s and I have swapped phonebooks.\n", s.Me.Pool.nodes[i].Name)
+		}
+	}
+
+	return nil
+}
 
 // CheckPoolForNodeByName checks my pool for nodes by name
 func (s *Server) CheckPoolForNodeByName(name string) (*NodeMessage, bool) {
@@ -56,13 +73,12 @@ func (s *Server) CheckPoolForNodeByName(name string) (*NodeMessage, bool) {
 // AddNodeToPool checks for a nodes existence in its pool and adds if it doesn't
 func (s *Server) AddNodeToPool(node *NodeMessage) error {
 	// need to think on this, it feels wrong
-	if s.CheckPoolForNode(node) {
-		log.Printf("I already know [%s@%s:%d]. Welcome back!\n", node.Name, node.Host, node.Port)
-	} else {
+	if !s.CheckPoolForNode(node) {
 		log.Printf("[%s@%s:%d] is new to me. Adding to my phonebook.\n", node.Name, node.Host, node.Port)
 
 		s.Me.Pool.nodes = append(s.Me.Pool.nodes, s.MessageToNode(node))
 	}
+
 	return nil
 }
 

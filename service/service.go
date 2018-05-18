@@ -56,18 +56,10 @@ func (s *Server) checkBootnodes(nodes string) error {
 		// Format my input, contact the nodes, and add them to my pool
 		s.Me.Pool = *s.formatBootnodes(nodes)
 
-		// Give each of my nodes my phonebook, minus themselves
-		if len(s.Me.Pool.nodes) > 0 {
-			log.Printf("[network] Informing my bootnodes of their graph...\n")
-			for i := range s.Me.Pool.nodes {
-				log.Printf("[network] Sending %s my phonebook...\n", s.Me.Pool.nodes[i].Name)
-				ierr := s.informNode(s.Me.Pool.nodes[i])
-				if ierr != nil {
-					log.Fatalf("[network] Informing failed: %v\n", ierr)
-				}
-				log.Printf("[network] %s and I have swapped phonebooks.\n", s.Me.Pool.nodes[i].Name)
-			}
-		}
+		//ierr := s.InformPoolOfNodes()
+		//if ierr != nil {
+		//	log.Printf("%v", ierr)
+		//}
 
 		return nil
 	}

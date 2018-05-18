@@ -6,7 +6,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"time"
 
@@ -72,7 +71,7 @@ func (s *Server) sendWhisper(node *NodeMessage, message string) error {
 	return nil
 }
 
-func (s *Server) requestNode(node *Node, name string) (*NodeMessage, error) {
+func (s *Server) requestNode(node *Node, name string, exclude []string) (*NodeMessage, error) {
 	var conn *grpc.ClientConn
 
 	conn, cerr := grpc.Dial(lib.FormatHostPort(node.Host, node.Port), grpc.WithInsecure(), grpc.WithBackoffMaxDelay(minute))
@@ -88,6 +87,7 @@ func (s *Server) requestNode(node *Node, name string) (*NodeMessage, error) {
 	requestPayload := &NodeRequestMessage{
 		Informer: s.NodeToMessage(s.Me),
 		Request:  name,
+		Exclude:  exclude,
 	}
 
 	// ask our target node for this node
@@ -126,9 +126,11 @@ func (s *Server) informNode(node *Node) error {
 		return rerr
 	}
 
+	var poolSize int = len(s.Me.Pool.nodes)
+
 	// incorporate their response
 	if len(response.Pool) > 0 {
-		fmt.Printf("Incorporating %s's phonebook...\n", node.Name)
+		log.Printf("Incorporating %s's phonebook...\n", node.Name)
 
 		for _, poolNode := range response.Pool {
 			err := s.AddNodeToPool(poolNode)
@@ -138,6 +140,14 @@ func (s *Server) informNode(node *Node) error {
 			}
 		}
 
+	}
+
+	if poolSize != len(s.Me.Pool.nodes) {
+		log.Printf("My pool changed. Informing my network.")
+		ierr := s.InformPoolOfNodes()
+		if ierr != nil {
+			log.Printf("%v", ierr)
+		}
 	}
 
 	return nil
