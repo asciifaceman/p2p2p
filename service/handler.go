@@ -12,28 +12,12 @@ import (
 func (s *Server) SayName(ctx context.Context, in *NodeMessage) (*NodeMessage, error) {
 	log.Printf("Name request received from %s, checking against my phonebook...\n", in.Name)
 
-	poolNames := make(map[string]int)
-
-	// If we already know the server we don't have to do aything
-	for _, poolNode := range s.Me.Pool.nodes {
-		poolNames[poolNode.Name] = poolNode.Port
+	// Naively maintaining a cache of Nodes
+	err := s.AddNodeToPool(in)
+	if err != nil {
+		log.Printf("Something serious went wrong! %v", err)
 	}
-
-	// Naively checking if I know the node or not
-	if val, ok := poolNames[in.Name]; ok && val == int(in.Port) {
-
-		log.Printf("I already know the source node. Long time no see, %s!\n", in.Name)
-
-	} else {
-		log.Printf("[%s@%s:%d] is new to me. Adding to my phonebook.\n", in.Name, in.Host, in.Port)
-		newNode := &Node{
-			Name: in.Name,
-			Host: in.Host,
-			Port: int(in.Port),
-		}
-		s.Me.Pool.nodes = append(s.Me.Pool.nodes, newNode)
-		log.Printf("[%s@%s:%d] Added. Responding....\n", in.Name, in.Host, in.Port)
-	}
+	log.Printf("[%s@%s:%d] Added. Responding....\n", in.Name, in.Host, in.Port)
 
 	return &NodeMessage{Name: s.Name, Host: s.Host, Port: int32(s.Port)}, nil
 }
@@ -45,11 +29,19 @@ func (s *Server) SendWhisper(ctx context.Context, in *WhisperMessage) (*WhisperA
 }
 
 // InformNode informs the target node of who it is, and retrieves the others identity
-func (s *Server) InformNode(ctx context.Context, in *NodeInformMessage) (*WhisperAck, error) {
+func (s *Server) InformNode(ctx context.Context, in *NodeInformMessage) (*NodeInformMessage, error) {
 	log.Printf("Received phonebook from [%s@%s:%d], processing...\n", in.Informer.Name, in.Informer.Host, in.Informer.Port)
-	log.Printf("%v", in.Pool)
-	// add to pool
-	// respond
-	log.Printf("Acknowledging successful receipt.")
-	return &WhisperAck{Response: true}, nil
+	for _, poolNode := range in.Pool {
+		err := s.AddNodeToPool(poolNode)
+		if err != nil {
+			// I haven't fully thought out how to inform the informer of this
+			log.Printf("Something serious went wrong! %v", err)
+			continue
+		}
+	}
+
+	informPool := s.BuildInformPool(in.Informer.Name, int(in.Informer.Port))
+
+	log.Printf("Acknowledging receipt & attempted incorporation.\n")
+	return informPool, nil
 }

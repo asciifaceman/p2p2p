@@ -30,5 +30,5 @@ service Name {
 }
 
 service InformService {
-  rpc InformNode(NodeInformMessage) returns (WhisperAck) {}
+  rpc InformNode(NodeInformMessage) returns (NodeInformMessage) {}
 }

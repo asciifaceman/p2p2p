@@ -65,7 +65,7 @@ func (s *Server) checkBootnodes(nodes string) error {
 				if ierr != nil {
 					log.Fatalf("[network] Informing failed: %v\n", ierr)
 				}
-				log.Printf("[network] %s has incorporated our phonebook.\n", s.Me.Pool.nodes[i].Name)
+				log.Printf("[network] %s and I have swapped phonebooks.\n", s.Me.Pool.nodes[i].Name)
 			}
 		}
 
