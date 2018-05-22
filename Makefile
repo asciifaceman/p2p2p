@@ -1,6 +1,6 @@
 
 test: ## Run tests if applicable
-	go test github.com/asciifaceman/p2p2p --cover
+	go test github.com/asciifaceman/p2p2p/service --cover
 
 clean: ## clean build dir
 	rm -rf target
